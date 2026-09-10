@@ -1,26 +1,25 @@
-pipeline{
+pipeline {
     agent any
-    tools{
+    tools {
         jdk 'jdk21'
-        nodejs 'node23'
     }
     environment {
-        SCANNER_HOME=tool 'sonar-scanner'
+        SCANNER_HOME = tool 'SonarQubeScanner'
     }
     stages {
-        stage('clean workspace'){
-            steps{
+        stage('clean workspace') {
+            steps {
                 cleanWs()
             }
         }
-        stage('Checkout from Git'){
-            steps{
-                git 'https://github.com/KastroVKiran/DevOps-Project-Swiggy.git'
+        stage('Checkout from Git') {
+            steps {
+                git url: 'https://github.com/05yash2002/project-swiggy.git', branch: 'main'
             }
         }
-        stage("Sonarqube Analysis "){
-            steps{
-                withSonarQubeEnv('sonar-server') {
+        stage("Sonarqube Analysis") {
+            steps {
+                withSonarQubeEnv('sonar-server') { 
                     sh ''' 
                     $SCANNER_HOME/bin/sonar-scanner \
                         -Dsonar.projectName=Swiggy \
@@ -29,10 +28,9 @@ pipeline{
                 }
             }
         }
-        stage("quality gate"){
+        stage("quality gate") {
            steps {
                script {
-                   // Added a timeout so the build won't hang forever if the webhook isn't configured
                    timeout(time: 2, unit: 'MINUTES') {
                        waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
                    }
@@ -49,24 +47,24 @@ pipeline{
                 sh "trivy fs . > trivyfs.txt"
             }
         }
-        stage("Docker Build & Push"){
-            steps{
-                script{
-                   withDockerRegistry(credentialsId: 'docker-creds', toolName: 'docker'){    
+        stage("Docker Build & Push") {
+            steps {
+                script {
+                   withDockerRegistry(credentialsId: 'docker-hub-credentials', toolName: 'docker') {    
                        sh "docker build -t swiggy ."
-                       sh "docker tag swiggy yashowardhan777/swiggy:latest "
-                       sh "docker push yashowardhan777/swiggy:latest "
-                   }
+                       sh "docker tag swiggy yashowardhan777/swiggy:latest"
+                       sh "docker push yashowardhan777/swiggy:latest"
+                    }
                 }
             }
         }
-        stage("TRIVY"){
-            steps{
+        stage("TRIVY") {
+            steps {
                 sh "trivy image yashowardhan777/swiggy:latest > trivy.txt" 
             }
         }
-        stage('Deploy to container'){
-            steps{
+        stage('Deploy to container') {
+            steps {
                 sh '''
                 docker rm -f swiggy || true
                 docker run -d --name swiggy -p 3000:3000 yashowardhan777/swiggy:latest
