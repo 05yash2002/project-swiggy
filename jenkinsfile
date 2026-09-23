@@ -45,7 +45,7 @@ pipeline {
         }
         stage('TRIVY FS SCAN') {
             steps {
-                sh "trivy fs . > trivyfs.txt"
+                sh "/usr/bin/trivy fs . > trivyfs.txt"
             }
         }
         stage("Docker Build & Push") {
@@ -55,13 +55,13 @@ pipeline {
                        sh "docker build -t swiggy ."
                        sh "docker tag swiggy yashowardhan777/swiggy:latest"
                        sh "docker push yashowardhan777/swiggy:latest"
-                    }
+                   }
                 }
             }
         }
         stage("TRIVY") {
             steps {
-                sh "trivy image yashowardhan777/swiggy:latest > trivy.txt" 
+                sh "/usr/bin/trivy image yashowardhan777/swiggy:latest > trivy.txt" 
             }
         }
         stage('Deploy to container') {
